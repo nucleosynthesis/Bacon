@@ -27,15 +27,20 @@ cvs co -r V00-03-23    CommonTools/RecoAlgos
 git clone https://github.com/nhanvtran/JetTools.git
 cp /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/JetTools/AnalyzerToolbox/python/njettinessadder_cfi.py JetTools/AnalyzerToolbox/python/
 
-git cms-merge-topic -u TaiSakuma:53X-met-131120-01
-git cms-merge-topic -u cms-analysis-tools:5_3_14-updateSelectorUtils
-git cms-merge-topic -u cms-analysis-tools:5_3_13_patch2-testNewTau
-git cms-merge-topic -u cms-met:53X-MVaNoPuMET-20131217-01
+cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/RecoMET/METPUSubtraction RecoMET
+cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/DataFormats .
+cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/RecoJets .
+
+###This recipe sucks and does not work well
+#git cms-merge-topic -u TaiSakuma:53X-met-131120-01
+#git cms-merge-topic -u cms-analysis-tools:5_3_14-updateSelectorUtils
+#git cms-merge-topic -u cms-analysis-tools:5_3_13_patch2-testNewTau
+#git cms-merge-topic -u cms-met:53X-MVaNoPuMET-20131217-01
 # Remove a bunch of directories bcecause somebody made a poor Met Recipe
-rm -rf PhysicsTools
-rm -rf GeneratorInterface
-rm -rf FWCore
-rm -rf RecoBTag
+#rm -rf PhysicsTools
+#rm -rf GeneratorInterface
+#rm -rf FWCore
+#rm -rf RecoBTag
 
 git clone https://github.com/violatingcp/Jets_Short.git
 mv Jets_Short/RecoJets/JetProducers/data/*.xml RecoJets/JetProducers/data/
