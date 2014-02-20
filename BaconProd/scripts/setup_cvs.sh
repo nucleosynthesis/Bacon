@@ -30,6 +30,7 @@ cp /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/JetTools/AnalyzerTool
 cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/RecoMET/METPUSubtraction RecoMET
 cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/DataFormats .
 cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/RecoJets .
+cp -r  /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/CondFormats .
 
 ###This recipe sucks and does not work well
 #git cms-merge-topic -u TaiSakuma:53X-met-131120-01
