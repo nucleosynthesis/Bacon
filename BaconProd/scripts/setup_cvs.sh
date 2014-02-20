@@ -18,7 +18,7 @@ cp $PATCHDIR/EGamma/EGammaAnalysisTools/interface/EGammaMvaEleEstimator.h.53Xpat
 echo "Checking out packages for MET filters..."
 cvs co -r V00-00-13-01 RecoMET/METFilters
 cvs co -r V00-00-08    RecoMET/METAnalyzers
-cvs co -r V00-03-23    CommonTools/RecoAlgos
+#cvs co -r V00-03-23    CommonTools/RecoAlgos
 #cvs co -r V01-00-11-01 DPGAnalysis/Skims
 #cvs co -r V00-11-17    DPGAnalysis/SiStripTools
 #cvs co -r V00-00-08    DataFormats/TrackerCommon
