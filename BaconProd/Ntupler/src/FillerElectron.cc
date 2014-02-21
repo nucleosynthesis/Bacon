@@ -175,14 +175,14 @@ void FillerElectron::fill(TClonesArray *array,
     //
     // Impact Parameter
     //==============================
-    pElectron->d0 = -gsfTrack->dxy(pv.position());
-    pElectron->dz =  gsfTrack->dz(pv.position());
-    
-    const reco::TransientTrack &tt = transientTrackBuilder->build(gsfTrack);
-    const double gsfsign = (pElectron->d0 >= 0) ? 1. : -1.;
-    const std::pair<bool,Measurement1D> &ip3d = IPTools::absoluteImpactParameter3D(tt,pv);
-    pElectron->sip3d = ip3d.first ? gsfsign*ip3d.second.value() / ip3d.second.error() : -999.;
-    
+    if(gsfTrack.isNonnull()) { 
+      pElectron->d0 = -gsfTrack->dxy(pv.position());
+      pElectron->dz =  gsfTrack->dz(pv.position());
+      const reco::TransientTrack &tt = transientTrackBuilder->build(gsfTrack);
+      const double gsfsign = (pElectron->d0 >= 0) ? 1. : -1.;
+      const std::pair<bool,Measurement1D> &ip3d = IPTools::absoluteImpactParameter3D(tt,pv);
+      pElectron->sip3d = ip3d.first ? gsfsign*ip3d.second.value() / ip3d.second.error() : -999.;
+    }    
     //
     // Identification
     //==============================
@@ -199,7 +199,7 @@ void FillerElectron::fill(TClonesArray *array,
     
     pElectron->isConv = ConversionTools::hasMatchedConversion(*itEle, hConvProduct, pv.position(), true, 2.0, 1e-6, 0);
     
-    pElectron->nMissingHits = gsfTrack->trackerExpectedHitsInner().numberOfHits();
+    if(gsfTrack.isNonnull()) pElectron->nMissingHits = gsfTrack->trackerExpectedHitsInner().numberOfHits();
     
     pElectron->typeBits=0;
     if(itEle->ecalDrivenSeed())    pElectron->typeBits |= baconhep::kEcalDriven;
@@ -300,7 +300,8 @@ double FillerElectron::evalEleIDMVA(const reco::GsfElectron &ele, EcalClusterLaz
   double _fbrem          = (ele.fbrem() < -1.) ? -1. : ele.fbrem();
   double _kftrk_chisq    = kfTrackRef.isNonnull() ? TMath::Min(kfTrackRef->normalizedChi2(),10.) : 0;
   double _kftrk_nhits    = kfTrackRef.isNonnull() ? kfTrackRef->hitPattern().trackerLayersWithMeasurement() : -1; 
-  double _gsftrk_chisq   = TMath::Min(ele.gsfTrack()->normalizedChi2(),200.); 
+  double _gsftrk_chisq   = 1; 
+  if(ele.gsfTrack().isNonnull()) _gsftrk_chisq  = TMath::Min(ele.gsfTrack()->normalizedChi2(),200.); 
   double _deta           = TMath::Min(fabs(ele.deltaEtaSuperClusterTrackAtVtx()),0.06);
   double _dphi           = TMath::Min(fabs(ele.deltaPhiSuperClusterTrackAtVtx()),0.6);
   double _detacalo       = TMath::Min(fabs(ele.deltaEtaSeedClusterTrackAtCalo()),0.2);
