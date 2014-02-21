@@ -49,7 +49,7 @@ namespace baconhep
       std::string fTrackName;
 
       // Muon momentum corrector
-      MuonMomentumCorrector fMuCorr;
+      MuonMomentumCorrector *fMuCorr;
 
       // general tracks cuts
       bool   fSaveTracks;

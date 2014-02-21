@@ -29,7 +29,9 @@ FillerMuon::FillerMuon():
   fTrackName ("generalTracks"),
   fSaveTracks(false),
   fTrackMinPt(20)  
-{}
+{
+  fMuCorr = new MuonMomentumCorrector();
+}
 
 //--------------------------------------------------------------------------------------------------
 FillerMuon::~FillerMuon(){}
@@ -43,7 +45,7 @@ void FillerMuon::fill(TClonesArray *array,
 		      const trigger::TriggerEvent &triggerEvent)
 {
   assert(array);
-  assert(fMuCorr.isInitialized());
+  bool lApplyMuscle = false; if(fMuCorr->isInitialized()) lApplyMuscle = true;
   
   // Get muon collection
   edm::Handle<reco::MuonCollection> hMuonProduct;
@@ -79,7 +81,8 @@ void FillerMuon::fill(TClonesArray *array,
     // muon pT cut
     TLorentzVector muvec;
     muvec.SetPtEtaPhiM(muTrack->pt(), muTrack->eta(), muTrack->phi(), MUON_MASS);
-    TLorentzVector muvecCorr = fMuCorr.evaluate(muvec, itMu->charge(), iEvent.id().run(), false);    
+    TLorentzVector muvecCorr;
+    if(lApplyMuscle) muvecCorr = fMuCorr->evaluate(muvec, itMu->charge(), iEvent.id().run(), false);    
     if(muTrack->pt() < fMinPt && muvecCorr.Pt() < fMinPt) continue;
     
     // construct object and place in array
@@ -96,7 +99,8 @@ void FillerMuon::fill(TClonesArray *array,
     pMuon->eta     = muTrack->eta();
     pMuon->phi     = muTrack->phi();
     pMuon->ptErr   = muTrack->ptError();
-    pMuon->ptHZZ4l = muvecCorr.Pt();   
+    pMuon->ptHZZ4l = -1;
+    if(lApplyMuscle) pMuon->ptHZZ4l = muvecCorr.Pt();   
     pMuon->q       = itMu->charge();
     pMuon->staPt   = itMu->standAloneMuon().isNonnull() ? itMu->standAloneMuon()->pt()  : 0;
     pMuon->staEta  = itMu->standAloneMuon().isNonnull() ? itMu->standAloneMuon()->eta() : 0;
@@ -223,7 +227,8 @@ void FillerMuon::fill(TClonesArray *array,
       // track pT cut
       TLorentzVector muvec;
       muvec.SetPtEtaPhiM(itTrk->pt(), itTrk->eta(), itTrk->phi(), MUON_MASS);
-      TLorentzVector muvecCorr = fMuCorr.evaluate(muvec, itTrk->charge(), iEvent.id().run(), false);    
+      TLorentzVector muvecCorr;
+      if(lApplyMuscle) muvecCorr =  fMuCorr->evaluate(muvec, itTrk->charge(), iEvent.id().run(), false);    
       if(itTrk->pt() < fTrackMinPt && muvecCorr.Pt() < fTrackMinPt) continue;    
       
       
@@ -240,7 +245,8 @@ void FillerMuon::fill(TClonesArray *array,
       pMuon->eta     = itTrk->eta();
       pMuon->phi     = itTrk->phi();
       pMuon->ptErr   = itTrk->ptError();
-      pMuon->ptHZZ4l = muvecCorr.Pt();   
+      pMuon->ptHZZ4l = -1;
+      if(lApplyMuscle) pMuon->ptHZZ4l = muvecCorr.Pt();   
       pMuon->q       = itTrk->charge();
       pMuon->staPt   = 0;
       pMuon->staEta  = 0;

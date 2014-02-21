@@ -73,6 +73,7 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   fRhoJetName     (iConfig.getUntrackedParameter<std::string>("rhoForJetsName", "kt6PFJets")),
   fEleName        (iConfig.getUntrackedParameter<std::string>("electronName", "gsfElectrons")),
   fMuonName       (iConfig.getUntrackedParameter<std::string>("muonName", "muons")),
+  fApplyMuscle    (iConfig.getUntrackedParameter<bool>("applyMuscle", false)),
   fPhotonName     (iConfig.getUntrackedParameter<std::string>("photonName", "photons")),
   fTauName        (iConfig.getUntrackedParameter<std::string>("tauName", "hpsPFTauProducer")),
   fJetName        (iConfig.getUntrackedParameter<std::string>("jetName", "ak5PFJets")),
@@ -249,10 +250,11 @@ void NtuplerMod::beginJob()
   fFillerMuon->fTrackName  = fTrackName;
   fFillerMuon->fSaveTracks = false;
   fFillerMuon->fTrackMinPt = 20;
-  fFillerMuon->fMuCorr.initialize(baconhep::MuonMomentumCorrector::kMuScleSummer12_DR53X_smearReReco,
-  				  (cmsenv+"/MuScleFit/Calibration/data").c_str(),
-        			  false);
-  
+  if(fApplyMuscle) { 
+    fFillerMuon->fMuCorr->initialize(baconhep::MuonMomentumCorrector::kMuScleSummer12_DR53X_smearReReco,
+				     (cmsenv+"/MuScleFit/Calibration/data").c_str(),
+				     false);
+  }
 
   fFillerPhoton = new baconhep::FillerPhoton();
   fFillerPhoton->fMinPt        = fPhotonMinPt;

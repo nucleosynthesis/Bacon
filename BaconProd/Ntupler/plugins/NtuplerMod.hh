@@ -96,6 +96,7 @@ class NtuplerMod : public edm::EDAnalyzer {
     std::string fRhoJetName;
     std::string fEleName;
     std::string fMuonName;
+    bool        fApplyMuscle;
     std::string fPhotonName;
     std::string fTauName;
     std::string fJetName;
