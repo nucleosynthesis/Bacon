@@ -48,7 +48,7 @@ mv Jets_Short/RecoJets/JetProducers/data/*.xml RecoJets/JetProducers/data/
 rm -rf Jets_Short
 
 cp /afs/cern.ch/work/p/pharris/public/tmp/CMSSW_5_3_13/src/RecoMET/METPUSubtraction/python/mvaPFMET_leptons_cff.py $CMSSW_BASE/src/RecoMET/METPUSubtraction/python/
-cp /afs/cern.ch/cern.ch/p/pharris/public/MVAMetUpdate/*Sep*.root                                                   $CMSSW_BASE/src/RecoMET/METPUSubtraction/data/
+cp /afs/cern.ch/user/p/pharris/public/MVAMetUpdate/*Sep*.root                                                   $CMSSW_BASE/src/RecoMET/METPUSubtraction/data/
 rm */*/python/*.pyc
 
 #echo "Checking out packages for MET..."
