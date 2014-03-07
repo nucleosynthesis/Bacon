@@ -13,6 +13,7 @@
 #include "BaconAna/DataFormats/interface/TPhoton.hh"
 #include "BaconAna/DataFormats/interface/TVertex.hh"
 #include "BaconAna/DataFormats/interface/TAddJet.hh"
+#include "BaconAna/DataFormats/interface/TPFPart.hh"
 
 #include "BaconProd/Ntupler/interface/FillerEventInfo.hh"
 #include "BaconProd/Ntupler/interface/FillerGenInfo.hh"
@@ -22,6 +23,7 @@
 #include "BaconProd/Ntupler/interface/FillerPhoton.hh"
 #include "BaconProd/Ntupler/interface/FillerTau.hh"
 #include "BaconProd/Ntupler/interface/FillerJet.hh"
+#include "BaconProd/Ntupler/interface/FillerPF.hh"
 
 // tools to parse HLT name patterns
 #include <boost/foreach.hpp>
@@ -51,6 +53,7 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   fSkipOnHLTFail  (iConfig.getUntrackedParameter<Bool_t>("skipOnHLTFail",kFALSE)),
   fIsData         (iConfig.getUntrackedParameter<Bool_t>("isData",kFALSE)),
   fUseGen         (iConfig.getUntrackedParameter<Bool_t>("useGen",kFALSE)),
+  fAddParticleFlow(iConfig.getUntrackedParameter<Bool_t>("addParticleFlow",false)),
   fHLTTag         ("TriggerResults","","HLT"),
   fHLTObjTag      ("hltTriggerSummaryAOD","","HLT"),
   fHLTFile        (iConfig.getUntrackedParameter<std::string>("TriggerFile","HLT")),
@@ -76,12 +79,15 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   fApplyMuscle    (iConfig.getUntrackedParameter<bool>("applyMuscle", false)),
   fPhotonName     (iConfig.getUntrackedParameter<std::string>("photonName", "photons")),
   fTauName        (iConfig.getUntrackedParameter<std::string>("tauName", "hpsPFTauProducer")),
+  fNCones         (iConfig.getUntrackedParameter<int>("NumCones", 2)),
+  fMinCone        (iConfig.getUntrackedParameter<double>("MinCone" , 0.4)),
+  fConeIter       (iConfig.getUntrackedParameter<double>("ConeIter", 0.1)),
   fJetName        (iConfig.getUntrackedParameter<std::string>("jetName", "ak5PFJets")),
   fGenJetName     (iConfig.getUntrackedParameter<std::string>("genJetName"   , "ak5GenJets")),
   fJetFlavorName  (iConfig.getUntrackedParameter<std::string>("jetFlavorName", "jetCombinedSecondaryVertexBJetTagsSJ")),
   fJetFlavorPhysName(iConfig.getUntrackedParameter<std::string>("jetFlavorPhysName", "jetCombinedSecondaryVertexBJetTagsSJ")),
   fPruneJetName   (iConfig.getUntrackedParameter<std::string>("pruneJetName" , "ca5PFJetsPruned")),
-  fSubJetName     (iConfig.getParameter<edm::InputTag>("subJetName")),
+  fSubJetName     (iConfig.getUntrackedParameter<std::string>("subJetName")),
   fRhoName        (iConfig.getUntrackedParameter<std::string>("rhoName"      , "kt6PFJets")),
   fCSVbtagName    (iConfig.getUntrackedParameter<std::string>("csvBTagName"  , "combinedSecondaryVertexBJetTags")),
   fCSVbtagNameSubJets(iConfig.getUntrackedParameter<std::string>("csvBTagSubJetName", "comibnedSecondaryVertexBJetTagsSJ")),
@@ -95,6 +101,7 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   fEESCName       (iConfig.getUntrackedParameter<std::string>("ecalEndcapSuperclusterName", "correctedMulti5x5SuperClustersWithPreshower")),
   fEBRecHitName   (iConfig.getUntrackedParameter<std::string>("ecalBarrelRecHitName", "reducedEcalRecHitsEB")),
   fEERecHitName   (iConfig.getUntrackedParameter<std::string>("ecalEndcapRecHitName", "reducedEcalRecHitsEE")),
+  fAddDepthTime   (iConfig.getUntrackedParameter<bool>("addPFDepthTime", false)),
   fFillerEvtInfo  (0),
   fFillerGenInfo  (0),
   fFillerPV       (0),
@@ -102,7 +109,6 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   fFillerMuon     (0),
   fFillerPhoton   (0),
   fFillerTau      (0),
-  fFillerJet      (0),
 //  fIsActiveEvtInfo(iConfig.getUntrackedParameter<bool>("isActiveEventInfo", true)),
 //  fIsActiveGenInfo(iConfig.getUntrackedParameter<bool>("isActiveGenInfo", true)),
 //  fIsActivePV     (iConfig.getUntrackedParameter<bool>("isActivePV", true)),
@@ -122,10 +128,10 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   fTauArr         (0),
   fJetArr         (0),
   fPhotonArr      (0),
-  fPVArr          (0),
-  fAddJetArr      (0)
+  fPVArr          (0)
 {
   // Don't write TObject part of the objects
+  baconhep::TEventInfo::Class()->IgnoreTObjectStreamer();
   baconhep::TEventInfo::Class()->IgnoreTObjectStreamer();
   baconhep::TGenEventInfo::Class()->IgnoreTObjectStreamer();
   baconhep::TGenParticle::Class()->IgnoreTObjectStreamer();
@@ -136,6 +142,11 @@ NtuplerMod::NtuplerMod(const edm::ParameterSet &iConfig):
   baconhep::TPhoton::Class()->IgnoreTObjectStreamer();
   baconhep::TVertex::Class()->IgnoreTObjectStreamer();
   baconhep::TAddJet::Class()->IgnoreTObjectStreamer();
+  baconhep::TPFPart::Class()->IgnoreTObjectStreamer();
+
+  fFillerJet     = new baconhep::FillerJet*[fNCones];
+  fJetArr        = new TClonesArray*[fNCones];
+  fAddJetArr     = new TClonesArray*[fNCones];
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -147,7 +158,7 @@ void NtuplerMod::beginJob()
 {
   fEvtInfo    = new baconhep::TEventInfo();
   fGenEvtInfo = new baconhep::TGenEventInfo();
-  
+
   //
   // Set up arrays
   //
@@ -155,11 +166,13 @@ void NtuplerMod::beginJob()
   fEleArr    = new TClonesArray("baconhep::TElectron");         assert(fEleArr);
   fMuonArr   = new TClonesArray("baconhep::TMuon");	        assert(fMuonArr);
   fTauArr    = new TClonesArray("baconhep::TTau");              assert(fTauArr);
-  fJetArr    = new TClonesArray("baconhep::TJet");	        assert(fJetArr);
   fPhotonArr = new TClonesArray("baconhep::TPhoton");	        assert(fPhotonArr);
   fPVArr     = new TClonesArray("baconhep::TVertex");           assert(fPVArr);
-  fAddJetArr = new TClonesArray("baconhep::TAddJet");	        assert(fAddJetArr);
-
+  for(int i0 = 0; i0 < fNCones; i0++) { 
+    fJetArr[i0]    = new TClonesArray("baconhep::TJet");	        assert(fJetArr[i0]);
+    fAddJetArr[i0] = new TClonesArray("baconhep::TAddJet");	        assert(fAddJetArr[i0]);
+  }
+  if(fAddParticleFlow) fPFParArr  = new TClonesArray("baconhep::TPFPart"     ,5000); assert(fPFParArr);
   //
   // Create output file, trees, and structs
   //
@@ -175,11 +188,14 @@ void NtuplerMod::beginJob()
   fEventTree->Branch("Electron", &fEleArr);
   fEventTree->Branch("Muon",     &fMuonArr);
   fEventTree->Branch("Tau",      &fTauArr);
-  fEventTree->Branch("Jet",      &fJetArr);
   fEventTree->Branch("Photon",   &fPhotonArr);
   fEventTree->Branch("PV",       &fPVArr);
-  if(fComputeFullJetInfo) fEventTree->Branch("JetAdd",   &fAddJetArr);
-
+  for(int i0 = 0; i0 < fNCones; i0++) { 
+    std::stringstream pSS; pSS << "Jet0" << int((fMinCone+i0*fConeIter)*10); 
+    fEventTree->Branch(pSS.str().c_str(),      &fJetArr[i0]);
+    if(fComputeFullJetInfo) fEventTree->Branch(("Add"+pSS.str()).c_str(),   &fAddJetArr[i0]);
+  }
+  if(fAddParticleFlow)   fEventTree->Branch("PFPart",   &fPFParArr);
   //
   // Triggers
   //
@@ -203,6 +219,9 @@ void NtuplerMod::beginJob()
   fFillerGenInfo->fGenEvtInfoName = fGenEvtInfoName;
   fFillerGenInfo->fGenParName     = fGenParName;
   fFillerGenInfo->fFillAll        = fFillAllGen;
+
+  if(fAddParticleFlow)   fFillerPF  = new baconhep::FillerPF();
+  if(fAddParticleFlow)   fFillerPF->fAddDepthTime = fAddDepthTime;
 
   fFillerPV = new baconhep::FillerVertex();
   fFillerPV->fPVName	    = fPVName;
@@ -274,43 +293,49 @@ void NtuplerMod::beginJob()
 //  fFillerTau->fRingIso.initialize();
 //  fFillerTau->fRingIso2.initialize();  
   
-  fFillerJet = new baconhep::FillerJet();
-  fFillerJet->fMinPt	         = fJetMinPt;
-  fFillerJet->fUseGen            = fUseGen;
-  fFillerJet->fJetName           = fJetName;
-  fFillerJet->fGenJetName        = fGenJetName;
-  fFillerJet->fJetFlavorName     = fJetFlavorName;
-  fFillerJet->fJetFlavorPhysName = fJetFlavorPhysName;
-  fFillerJet->fPruneJetName      = fPruneJetName;
-  fFillerJet->fSubJetName        = fSubJetName;//(fSubJetName.label()+"_"+fSubJetName.instance());
-  fFillerJet->fPVName	         = fPVName;
-  fFillerJet->fRhoName           = fRhoJetName;
-  fFillerJet->fCSVbtagName       = fCSVbtagName;
-  fFillerJet->fCSVbtagSubJetName = fCSVbtagNameSubJets;
-  fFillerJet->fJettinessName     = fJettinessName;
-  fFillerJet->fQGLikelihood      = fQGLikelihood;
-  fFillerJet->fQGLikelihoodSubJets  = fQGLikelihoodSubJets;
-  fFillerJet->fComputeFullInfo   = fComputeFullJetInfo;
+  for(int i0 = 0; i0 < fNCones; i0++) { 
+    double pConeSize = fMinCone + i0*fConeIter;
+    std::stringstream pSS; pSS << "AK" << int(pConeSize*10);
+    std::string lPre = pSS.str();
+    fFillerJet[i0] = new baconhep::FillerJet();
+    fFillerJet[i0]->fPre               = lPre;
+    fFillerJet[i0]->fConeSize          = pConeSize;
+    fFillerJet[i0]->fMinPt	       = fJetMinPt;
+    fFillerJet[i0]->fUseGen            = fUseGen;
+    fFillerJet[i0]->fJetName           = lPre+fJetName;
+    fFillerJet[i0]->fGenJetName        = lPre+fGenJetName;
+    fFillerJet[i0]->fJetFlavorName     = lPre+fJetFlavorName;
+    fFillerJet[i0]->fJetFlavorPhysName = lPre+fJetFlavorPhysName;
+    fFillerJet[i0]->fPruneJetName      = lPre+fPruneJetName;
+    fFillerJet[i0]->fSubJetName        = edm::InputTag(lPre+fSubJetName,"SubJets");
+    fFillerJet[i0]->fPVName	       = fPVName;
+    fFillerJet[i0]->fRhoName           = fRhoJetName;
+    fFillerJet[i0]->fCSVbtagName       = lPre+fCSVbtagName;
+    fFillerJet[i0]->fCSVbtagSubJetName = lPre+fCSVbtagNameSubJets;
+    fFillerJet[i0]->fJettinessName     = lPre+fJettinessName;
+    fFillerJet[i0]->fQGLikelihood      = lPre+fQGLikelihood;
+    fFillerJet[i0]->fQGLikelihoodSubJets  = lPre+fQGLikelihoodSubJets;
+    fFillerJet[i0]->fComputeFullInfo   = fComputeFullJetInfo;
+    std::vector<std::string> jecFiles;
+    std::vector<std::string> jecUncFiles;
+    jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_L1FastJet_AK5PF.txt");
+    jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_L2Relative_AK5PF.txt");
+    jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_L3Absolute_AK5PF.txt");
+    if(fIsData)   jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_DATA_L2L3Residual_AK5PF.txt");
+    if(!fIsData)  jecUncFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_Uncertainty_AK5PF.txt");
+    if(fIsData)   jecUncFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_DATA_Uncertainty_AK5PF.txt");
+    std::vector<std::string> jecFilesForID;
+    jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/START53_V15_L1FastJet_AK5PF.txt");
+    jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/START53_V15_L2Relative_AK5PF.txt");
+    jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/START53_V15_L3Absolute_AK5PF.txt");
+    if(fIsData) jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_DATA_L2L3Residual_AK5PF.txt");
+    fFillerJet[i0]->initJetCorr(jecFiles,jecUncFiles, jecFilesForID);
+    fFillerJet[i0]->fJetPUIDMVACalc.initialize(baconhep::JetPUIDMVACalculator::k53,
+					   "BDT","",
+					   "BDT",cmsenv+"/BaconProd/Utils/data/TMVAClassificationCategory_JetID_53X_Dec2012.weights.xml");
+    fFillerJet[i0]->fQGLLCalc.initialize("BDT",cmsenv+"/BaconProd/Utils/data/QG.weights.xml"); 
+  }
 
-  std::vector<std::string> jecFiles;
-  std::vector<std::string> jecUncFiles;
-  jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_L1FastJet_AK5PF.txt");
-  jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_L2Relative_AK5PF.txt");
-  jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_L3Absolute_AK5PF.txt");
-  if(fIsData)   jecFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_DATA_L2L3Residual_AK5PF.txt");
-  if(!fIsData)  jecUncFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_MC_Uncertainty_AK5PF.txt");
-  if(fIsData)   jecUncFiles.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_DATA_Uncertainty_AK5PF.txt");
-  std::vector<std::string> jecFilesForID;
-  jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/START53_V15_L1FastJet_AK5PF.txt");
-  jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/START53_V15_L2Relative_AK5PF.txt");
-  jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/START53_V15_L3Absolute_AK5PF.txt");
-  if(fIsData) jecFilesForID.push_back(cmsenv+"/BaconProd/Utils/data/Summer13_V1_DATA_L2L3Residual_AK5PF.txt");
-  fFillerJet->initJetCorr(jecFiles,jecUncFiles, jecFilesForID);
-  fFillerJet->fJetPUIDMVACalc.initialize(baconhep::JetPUIDMVACalculator::k53,
-  					 "BDT","",
-  					 "BDT",cmsenv+"/BaconProd/Utils/data/TMVAClassificationCategory_JetID_53X_Dec2012.weights.xml");
-  fFillerJet->fQGLLCalc.initialize("BDT",cmsenv+"/BaconProd/Utils/data/QG.weights.xml"); 
-  
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -332,7 +357,10 @@ void NtuplerMod::endJob()
   delete fFillerMuon;
   delete fFillerPhoton;
   delete fFillerTau;
-  delete fFillerJet;
+  for(int i0 = 0; i0 < fNCones; i0++) { 
+    delete fFillerJet[i0];
+  }
+  if(fAddParticleFlow) delete fFillerPF;
   
   delete fEvtInfo;
   delete fGenEvtInfo;
@@ -344,6 +372,7 @@ void NtuplerMod::endJob()
   delete fPhotonArr;
   delete fPVArr;
   delete fAddJetArr;
+  delete fPFParArr;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -407,10 +436,16 @@ void NtuplerMod::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
   fTauArr->Clear();
   fFillerTau->fill(fTauArr, iEvent, iSetup, *pv, fTrigger->fRecords, *hTrgEvt);
-
-  fJetArr->Clear();
-  fAddJetArr->Clear();
-  fFillerJet->fill(fJetArr,fAddJetArr, iEvent, iSetup, *pv, fTrigger->fRecords, *hTrgEvt);
+  
+  for(int i0 = 0; i0 < fNCones; i0++) { 
+    fJetArr   [i0]->Clear();
+    fAddJetArr[i0]->Clear();
+    fFillerJet[i0]->fill(fJetArr[i0],fAddJetArr[i0], iEvent, iSetup, *pv, fTrigger->fRecords, *hTrgEvt);
+  }
+  if(fAddParticleFlow) { 
+    fPFParArr->Clear();
+    fFillerPF->fill(fPFParArr,fPVArr,iEvent);
+  }
   fEventTree->Fill();
 }
 

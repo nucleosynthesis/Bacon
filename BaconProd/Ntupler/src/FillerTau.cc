@@ -115,8 +115,7 @@ void FillerTau::fill(TClonesArray *array,
     // Impact Parameter
     //==============================
     const reco::PFCandidateRef& leadChHad = itTau->leadPFChargedHadrCand();
-    pTau->dzLeadChHad = leadChHad.isNonnull() ? leadChHad->trackRef()->dz(pv.position()) : -999.;
-    
+    pTau->dzLeadChHad = (leadChHad.isNonnull() && leadChHad->trackRef().isNonnull()) ? leadChHad->trackRef()->dz(pv.position()) : -999.;    
     //
     // Isolation
     //==============================

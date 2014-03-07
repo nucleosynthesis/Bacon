@@ -28,6 +28,7 @@ using namespace baconhep;
 FillerJet::FillerJet():
   fMinPt         (20),
   fUseGen        (true),
+  fPre           ("AK4"),
   fJetName       ("ak5PFJets"),
   fGenJetName    ("AKT5GenJets"),
   fJetFlavorName ("AKT5GenJets"),

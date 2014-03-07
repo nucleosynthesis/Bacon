@@ -17,19 +17,19 @@ process.GlobalTag.globaltag = 'START53_V7G::All'
 process.load("RecoTauTag.Configuration.RecoPFTauTag_cff")
 
 # import custom configurations
-#process.load('BaconProd/Ntupler/mybtagging_cff')     # produce b-tag discriminators
-#process.load('BaconProd/Ntupler/myGenJets_cff')
-process.load('BaconProd/Ntupler/myJetExtras_cff')    #include gen jets and b-tagging
+process.load('BaconProd/Ntupler/myJetExtras04_cff')    #include gen jets and b-tagging
+process.load('BaconProd/Ntupler/myJetExtras05_cff')    #include gen jets and b-tagging
+process.load('BaconProd/Ntupler/myJetExtras06_cff')    #include gen jets and b-tagging
+process.load('BaconProd/Ntupler/myJetExtras07_cff')    #include gen jets and b-tagging
+process.load('BaconProd/Ntupler/myJetExtras08_cff')    #include gen jets and b-tagging
+process.load('BaconProd/Ntupler/myJetExtras09_cff')    #include gen jets and b-tagging
 process.load('BaconProd/Ntupler/myMETFilters_cff')   # apply MET filters set to tagging mode
 process.load('BaconProd/Ntupler/myMVAMet_cff')
 
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.source = cms.Source("PoolSource",
-#  firstRun   = cms.untracked.uint32(0),
-#  firstLumi  = cms.untracked.uint32(0),
-#  firstEvent = cms.untracked.uint32(0),
-  fileNames  = cms.untracked.vstring('/store/cmst3/group/cmgtools/CMG/ggH125_HTobb_8TeV_madgraph/Summer12_DR53X-PU_S10_START53_V7C-v1/AODSIM/V5_B/PFAOD_99.root')
+    fileNames  = cms.untracked.vstring('/store/cmst3/group/cmgtools/CMG/WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball/Summer12_DR53X-PU_S10_START53_V7A-v2/AODSIM/V5_B/PFAOD_299.root')
 )
 process.source.inputCommands = cms.untracked.vstring("keep *",
                                                      "drop *_MEtoEDMConverter_*_*")
@@ -45,10 +45,10 @@ cmssw_base = os.environ['CMSSW_BASE']
 
 process.ntupler = cms.EDAnalyzer('NtuplerMod',
   skipOnHLTFail = cms.untracked.bool(False),
-  outputName    = cms.untracked.string('ntuple.root'),
+  outputName    = cms.untracked.string('Output.root'),
   TriggerFile   = cms.untracked.string(cmssw_base+"/src/BaconAna/DataFormats/data/HLTFile_v0"),                                  
-  
-  useGen = cms.untracked.bool(True),
+  addParticleFlow  = cms.untracked.bool(False),    
+  useGen           = cms.untracked.bool(True),
   genEventInfoName = cms.untracked.string('generator'),
   genParticlesName = cms.untracked.string('genParticles'),
   fillAllGen                 = cms.untracked.bool(False),                               
@@ -64,12 +64,15 @@ process.ntupler = cms.EDAnalyzer('NtuplerMod',
   applyMuscle                = cms.untracked.bool(False),
   photonName                 = cms.untracked.string('photons'),
   tauName                    = cms.untracked.string('hpsPFTauProducer'),
-  jetName                    = cms.untracked.string('ak5PFJets'),
-  genJetName                 = cms.untracked.string('ak5GenJets'),
-  jetFlavorName              = cms.untracked.string('AK5byValAlgo'),
-  jetFlavorPhysName          = cms.untracked.string('AK5byValPhys'),
-  pruneJetName               = cms.untracked.string('ca5PFJetsPruned'),
-  subJetName                 = cms.InputTag('ca5PFJetsPruned','SubJets'),
+  NumCones                   = cms.untracked.int32(1),                               
+  MinCone                    = cms.untracked.double(0.5),                               
+  ConeIter                   = cms.untracked.double(0.1),                               
+  jetName                    = cms.untracked.string('PFJets'),
+  genJetName                 = cms.untracked.string('GenJets'),
+  jetFlavorName              = cms.untracked.string('byValAlgo'),
+  jetFlavorPhysName          = cms.untracked.string('byValPhys'),
+  pruneJetName               = cms.untracked.string('caPFJetsPruned'),
+  subJetName                 = cms.untracked.string('caPFJetsPruned'),
   rhoName                    = cms.untracked.string('kt6PFJets'),
   csvBTagName                = cms.untracked.string('jetCombinedSecondaryVertexMVABJetTags'),
   csvBTagSubJetName          = cms.untracked.string('jetCombinedSecondaryVertexMVABJetTagsSJ'),
@@ -85,19 +88,22 @@ process.ntupler = cms.EDAnalyzer('NtuplerMod',
   ecalEndcapRecHitName       = cms.untracked.string('reducedEcalRecHitsEE')
 )
 
-process.baconSequence = cms.Sequence(process.metFilters*
+process.baconSequence = cms.Sequence(
+                                     process.metFilters*
+                                     process.recojetsequence*
                                      process.genjetsequence*
-                                     process.jetsequence*
+                                     process.AK5jetsequence*
+                                     process.AK5genjetsequence*
                                      process.recoTauClassicHPSSequence*   ### must come after antiktGenJets otherwise conflict on RecoJets/JetProducers/plugins
 				     process.MVAMetSeq*
 				     process.ntupler)
 				     
 process.p = cms.Path(process.baconSequence)
 
-#process.output = cms.OutputModule("PoolOutputModule",                                                                                                                                                     
-#                                  outputCommands = cms.untracked.vstring('keep *'),                                                                                                                      
-#                                  fileName       = cms.untracked.string ("test.root")                                                                                                                    
-#)
+process.output = cms.OutputModule("PoolOutputModule",                                                                                                                                                     
+                                  outputCommands = cms.untracked.vstring('keep *'),                                                                                                                      
+                                  fileName       = cms.untracked.string ("BBB")                                                                                                                    
+)
 
 # schedule definition                                                                                                       
 #process.outpath  = cms.EndPath(process.output)                                                                                                                                                

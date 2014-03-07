@@ -29,7 +29,7 @@ process.load('BaconProd/Ntupler/myMVAMetData_cff')
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.source = cms.Source("PoolSource",
-  fileNames  = cms.untracked.vstring('/store/data/Run2012D/MET/AOD/PromptReco-v1/000/203/994/163AA34A-570E-E211-ABD5-001D09F242EF.root')
+  fileNames  = cms.untracked.vstring('AAA')
 )
 process.source.inputCommands = cms.untracked.vstring("keep *",
                                                      "drop *_MEtoEDMConverter_*_*")
@@ -45,9 +45,9 @@ cmssw_base = os.environ['CMSSW_BASE']
 
 process.ntupler = cms.EDAnalyzer('NtuplerMod',
   skipOnHLTFail = cms.untracked.bool(True),
-  outputName    = cms.untracked.string('Output.root'),
+  outputName    = cms.untracked.string('BBB'),
   TriggerFile   = cms.untracked.string(cmssw_base+"/src/BaconAna/DataFormats/data/HLTFile_v0"),                                  
-  useParticleFlow = cms.untracked.bool(False),
+
   useGen = cms.untracked.bool(False),
   isData = cms.untracked.bool(True),
 

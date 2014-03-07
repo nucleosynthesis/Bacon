@@ -60,6 +60,7 @@ namespace baconhep
       double fMinPt;
       bool   fUseGen;
       // EDM object collection names
+      std::string fPre;
       std::string fJetName;
       std::string fGenJetName;
       std::string fJetFlavorName;

@@ -29,6 +29,7 @@ namespace baconhep {
   class FillerPhoton;
   class FillerTau;
   class FillerJet;
+  class FillerPF;
 }
 
 //
@@ -65,6 +66,7 @@ class NtuplerMod : public edm::EDAnalyzer {
     bool fSkipOnHLTFail;
     bool fIsData;
     bool fUseGen;
+    bool fAddParticleFlow;
     
     // variables to handle triggers
     edm::ParameterSetID fTriggerNamesID;
@@ -99,12 +101,15 @@ class NtuplerMod : public edm::EDAnalyzer {
     bool        fApplyMuscle;
     std::string fPhotonName;
     std::string fTauName;
+    int         fNCones;
+    double      fMinCone;
+    double      fConeIter;
     std::string fJetName;
     std::string fGenJetName;
     std::string fJetFlavorName;
     std::string fJetFlavorPhysName;
     std::string fPruneJetName;
-    edm::InputTag fSubJetName;
+    std::string fSubJetName;
     std::string fRhoName;
     std::string fCSVbtagName;
     std::string fCSVbtagNameSubJets;
@@ -118,6 +123,7 @@ class NtuplerMod : public edm::EDAnalyzer {
     std::string fEESCName;
     std::string fEBRecHitName;
     std::string fEERecHitName;
+    bool        fAddDepthTime;
 
     // bacon fillers
     baconhep::FillerEventInfo *fFillerEvtInfo;
@@ -127,7 +133,8 @@ class NtuplerMod : public edm::EDAnalyzer {
     baconhep::FillerMuon      *fFillerMuon;
     baconhep::FillerPhoton    *fFillerPhoton;
     baconhep::FillerTau       *fFillerTau;
-    baconhep::FillerJet       *fFillerJet;
+    baconhep::FillerJet       **fFillerJet;
+    baconhep::FillerPF        *fFillerPF;
     
     baconhep::TTrigger        *fTrigger;
 //    bool fIsActiveEvtInfo;
@@ -150,8 +157,9 @@ class NtuplerMod : public edm::EDAnalyzer {
     TClonesArray	    *fEleArr;
     TClonesArray	    *fMuonArr;
     TClonesArray	    *fTauArr;
-    TClonesArray	    *fJetArr;
+    TClonesArray	    **fJetArr;
     TClonesArray	    *fPhotonArr;
     TClonesArray	    *fPVArr;
-    TClonesArray	    *fAddJetArr;
+    TClonesArray	    **fAddJetArr;
+    TClonesArray	    *fPFParArr;
 };
