@@ -95,7 +95,7 @@ if options.monitor:
      for file in fnmatch.filter(files,'*.sh'):
        if os.path.isfile('%s/%s.fail'%(root,file)): failjobs.append('%s'%file)
        if os.path.isfile('%s/%s.done'%(root,file)):
-       		if not '%s.sh'%file in failedjobs : donejobs.apend('%s'%file)
+       		if not '%s.sh'%file in failjobs : donejobs.append('%s'%file)
        if os.path.isfile('%s/%s.run'%(root,file)): runjobs.append('%s'%file)
     print 'Status of jobs directory ', dir
     print '  %d in status Fail -> (resub them with --monitor resub)'%len(failjobs)
