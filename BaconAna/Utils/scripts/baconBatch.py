@@ -36,13 +36,14 @@ parser.add_option("--monitor",default='',help="Monitor mode (sub/resub/check dir
 
 cwd = os.getcwd()
 (options,args) = parser.parse_args()
-if len(args)<1: sys.exit('Error -- must specify ANALYZER' )
+if len(args)<1 and not options.monitor: sys.exit('Error -- must specify ANALYZER' )
 njobs = options.njobs
 
-def write_job(exec_line, out, analyzer, i):
+def write_job(exec_line, out, analyzer, i, n):
 
 	sub_file = open('%s/sub_%s_job%d.sh'%(out,analyzer,i),'w')
 	sub_file.write('#!/bin/bash\n')
+	sub_file.write('# Job Number %d, running over %d files \n'%(i,n))
 	sub_file.write('touch %s.run\n'%os.path.abspath(sub_file.name))
 	sub_file.write('cd %s\n'%os.getcwd())
 	sub_file.write('eval `scramv1 runtime -sh`\n')
@@ -81,7 +82,7 @@ if options.monitor:
     for root,dirs,files in os.walk(dir):
      for file in fnmatch.filter(files,'*.sh'):
        if options.monitor == 'resub' and not os.path.isfile('%s/%s.fail'%(root,file)): continue
-       lofjobs.append(os.path.abspath(file))
+       lofjobs.append('%s/%s'%(os.path.abspath(root),file))
     print 'Submitting %d jobs from directory %s'%(len(lofjobs),dir)
     submit_jobs(lofjobs) 
 
@@ -92,10 +93,10 @@ if options.monitor:
 
     for root,dirs,files in os.walk(dir):
      for file in fnmatch.filter(files,'*.sh'):
-       if os.path.isfile('%s/%s.fail'%(root,file)): failjobs.append('%s.sh'%file)
+       if os.path.isfile('%s/%s.fail'%(root,file)): failjobs.append('%s'%file)
        if os.path.isfile('%s/%s.done'%(root,file)):
-       		if not '%s.sh'%file in failedjobs : donejobs.apend('%s.sh'%file)
-       if os.path.isfile('%s/%s.run'%(root,file)): runjobs.append('%s.sh'%file)
+       		if not '%s.sh'%file in failedjobs : donejobs.apend('%s'%file)
+       if os.path.isfile('%s/%s.run'%(root,file)): runjobs.append('%s'%file)
     print 'Status of jobs directory ', dir
     print '  %d in status Fail -> (resub them with --monitor resub)'%len(failjobs)
     for job in failjobs : print '\t %s'%job
@@ -114,10 +115,13 @@ def parse_to_dict(l_list):
     ret[int(ni)]=varg
   return ret
 
-def getFilesJob(dir,njobs,job):
+def getFilesJob(dir,job,njobs):
+  if njobs == 1 : 
+  	njobs = -1
+	job = 0
   infiles = []
-  if '/eos' in options.directory : infiles = makeCaFiles(options.directory)
-  else : infiles = makeFiles(options.directory)
+  if '/store/' in options.directory : infiles = makeCaFiles(options.directory,njobs,job)
+  else : infiles = makeFiles(options.directory,njobs,job)
   return infiles
 
 # -- MAIN
@@ -136,20 +140,22 @@ for arg_i,arg in enumerate(default_args):
 print 'running Analyser -- (default call) \n\t%s'%exec_line
 
 if not options.dryRun and njobs > 1:
-	print 'Writing Submission Scripts to %s (submit after with --monitor sub)'%options.outdir
+	print 'Writing %d Submission Scripts to %s (submit after with --monitor sub)'%(njobs,options.outdir)
 
 for job_i in range(njobs):
  
  files = getFilesJob(options.directory,job_i,njobs)
  job_exec = ''
 
+ nfiles_i = 0
  for fil_i,fil in enumerate(files):
    if not fil[1]: continue
    exec_line_i = exec_line.replace('nothing.root',fil[0]) 
-   job_exec+=exec_line_i+'; mv Output.root %s/%s/Ouput_job%d_file%d.root;\n'%(cwd,options.outdir,job_i,fil_i) 
+   job_exec+=exec_line_i+'; mv Output.root %s/Ouput_job%d_file%d.root; '%(options.outdir,job_i,fil_i) 
+   nfiles_i += 1
 
  if options.dryRun : 
  	print 'job %d/%d -> '%(job_i+1,njobs), job_exec
  elif njobs > 1: 
-   write_job(exec_line, options.outdir, analyzer, job_i)
+   write_job(job_exec, options.outdir, analyzer, job_i, nfiles_i)
  else: os.system(job_exec) 
