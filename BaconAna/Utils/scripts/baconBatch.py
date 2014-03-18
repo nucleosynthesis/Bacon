@@ -9,6 +9,7 @@
 # ------------------------------------------------------------------------------------
 
 import sys, commands, os, fnmatch
+from distutils import spawn
 from optparse import OptionParser
 from optparse import OptionGroup
 from BaconAna.Utils.makeFilelist import *
@@ -128,6 +129,8 @@ def getFilesJob(dir,job,njobs):
 os.system('mkdir -p %s/%s'%(cwd,options.outdir)) 
 
 analyzer = args[0]
+# Check if exe in path 
+if not spawn.find_executable(analyzer): sys.exit("Error -- No Executable %s. Did you cmsenv?"%analyzer)
 analyzer_args = parse_to_dict(options.args)
 exec_line = '%s'%analyzer
 
