@@ -1,0 +1,6 @@
+<use name="BaconAna/DataFormats"/>
+<use name="BaconAnalyzer/MonojetSelection"/>
+<use name="root"/>
+<flags CXXFLAGS="-g -Wall"/>
+<bin   file="runMonojet.cpp" name="runMonojet"> </bin>
+
