@@ -1,0 +1,17 @@
+Statistics/selection/fitting with MonoX Bacon search
+
+Skim Files to produce simple mini-trees
+
+  g++ skimMetFilesExecDir.cpp -I `root-config --incdir` `root-config --libs` -o skimMetFilesExec 
+
+and submit jobs with bacon (see scripts/RUN_MONOJET_SKIM.sh)
+
+Run the model building from python steering (configure categories with categories.py)
+  ./scripts/makeModel.py categories
+
+output model is ready for Higgs Combine code to run
+make plots with ...
+
+  ./scripts/makePlots output.root config 
+
+note, output.root can also be the mlfit.root from combine if running with saving of shapes and uncertainties
